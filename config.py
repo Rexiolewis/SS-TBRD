@@ -18,6 +18,8 @@ class Settings:
     binance_api_key:    str  = os.getenv("BINANCE_API_KEY", "")
     binance_api_secret: str  = os.getenv("BINANCE_API_SECRET", "")
     binance_testnet:    bool = as_bool(os.getenv("BINANCE_TESTNET"), True)
+    # Use live public market data by default so the dashboard loads even without testnet symbols.
+    market_data_testnet: bool = as_bool(os.getenv("MARKET_DATA_TESTNET"), False)
 
     symbol:           str = os.getenv("SYMBOL", "BTCUSDT").upper()
     interval:         str = os.getenv("INTERVAL", "1m")

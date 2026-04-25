@@ -97,6 +97,22 @@ class BinanceSpotClient:
                 return float(bal["free"])
         return 0.0
 
+    def get_asset_balance(self, asset: str = "USDT") -> dict:
+        """Return free, locked, and total balance for the given asset."""
+        account = self.get_account()
+        asset = asset.upper()
+        for bal in account.get("balances", []):
+            if bal["asset"] == asset:
+                free = float(bal["free"])
+                locked = float(bal["locked"])
+                return {
+                    "asset": asset,
+                    "free": free,
+                    "locked": locked,
+                    "total": free + locked,
+                }
+        return {"asset": asset, "free": 0.0, "locked": 0.0, "total": 0.0}
+
     # ── Orders (private) ─────────────────────────────────────────────────────
 
     def place_market_buy(self, symbol: str, quantity: float) -> dict:

@@ -109,6 +109,15 @@ def tail_text(path: Path, lines: int = 25) -> str:
     return "\n".join(content[-lines:]) if content else "No log yet."
 
 
+def load_account_balance(asset: str = "USDT") -> dict:
+    client = BinanceSpotClient(
+        api_key=settings.binance_api_key,
+        api_secret=settings.binance_api_secret,
+        testnet=settings.binance_testnet,
+    )
+    return client.get_asset_balance(asset)
+
+
 def score_pct_color(pct: float) -> str:
     if pct >= 0.65:
         return "#22c55e"
@@ -275,6 +284,38 @@ with st.sidebar:
         st.warning("⚠️ Live trading is ON in .env")
     st.divider()
 
+    # Account balance
+    st.markdown("<div class='section-title'>Account</div>", unsafe_allow_html=True)
+    account_env = "TESTNET" if settings.binance_testnet else "REAL BINANCE"
+    st.caption(f"Account endpoint: **{account_env}**")
+    if not settings.binance_api_key or not settings.binance_api_secret:
+        st.info("Add BINANCE_API_KEY and BINANCE_API_SECRET in .env to show USDT balance.")
+    else:
+        if "account_balance" not in st.session_state:
+            try:
+                st.session_state.account_balance = load_account_balance("USDT")
+                st.session_state.account_balance_error = ""
+            except Exception as exc:
+                st.session_state.account_balance = None
+                st.session_state.account_balance_error = str(exc)
+
+        if st.button("Refresh USDT Balance", use_container_width=True):
+            try:
+                st.session_state.account_balance = load_account_balance("USDT")
+                st.session_state.account_balance_error = ""
+            except Exception as exc:
+                st.session_state.account_balance = None
+                st.session_state.account_balance_error = str(exc)
+
+        balance = st.session_state.get("account_balance")
+        if balance:
+            st.metric("USDT available", f"${balance['free']:,.2f}")
+            st.caption(f"Locked: ${balance['locked']:,.2f} | Total: ${balance['total']:,.2f}")
+        elif st.session_state.get("account_balance_error"):
+            st.error(f"Balance error: {st.session_state.account_balance_error}")
+
+    st.divider()
+
     # Start / Stop
     st.markdown("<div class='section-title'>Bot Control</div>", unsafe_allow_html=True)
     c_start, c_stop = st.columns(2)
@@ -331,7 +372,7 @@ if not symbol:
 
 try:
     df_1m, df_5m, order_book = load_market(
-        symbol, interval, confirm_interval, candle_limit, settings.binance_testnet
+        symbol, interval, confirm_interval, candle_limit, settings.market_data_testnet
     )
 except Exception as exc:
     st.error(f"Failed to load market data: {exc}")
@@ -397,12 +438,14 @@ with h1:
 
 with h2:
     bot_badge = "badge-green" if bot_running else "badge-red"
+    market_label = "TESTNET" if settings.market_data_testnet else "LIVE SPOT"
     bot_label = "● RUNNING" if bot_running else "● STOPPED"
     st.markdown(
         f"<div style='font-size:12px;color:#64748b;margin-bottom:4px'>BOT STATUS</div>"
         f"<span class='badge {bot_badge}' style='font-size:14px'>{bot_label}</span>",
         unsafe_allow_html=True,
     )
+    st.caption(f"Market data: {market_label}")
 
 with h3:
     if cb_status["halted"]:

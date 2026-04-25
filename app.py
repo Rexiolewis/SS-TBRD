@@ -35,6 +35,7 @@ def main():
     print(_DIVIDER)
     print("  Crypto Spot Long Bot  —  starting up")
     print(f"  Mode     : {settings.trading_mode}")
+    print(f"  Market   : {'testnet' if settings.market_data_testnet else 'live spot'}")
     print(f"  Symbol   : {settings.symbol}")
     print(f"  Target   : ${settings.target_profit_usd:.2f} net profit per trade (after fees)")
     print(f"  Max loss : ${settings.max_loss_usd:.2f} per trade")
@@ -44,7 +45,7 @@ def main():
     client = BinanceSpotClient(
         api_key=settings.binance_api_key,
         api_secret=settings.binance_api_secret,
-        testnet=settings.binance_testnet,
+        testnet=settings.market_data_testnet,
     )
 
     signal_engine = SpotLongEngine(
@@ -87,7 +88,7 @@ def main():
     stream = BinanceWSStream(
         symbol=settings.symbol,
         intervals=[settings.interval, settings.confirm_interval],
-        testnet=settings.binance_testnet,
+        testnet=settings.market_data_testnet,
     )
     if df_1m_seed is not None:
         stream.seed({settings.interval: df_1m_seed, settings.confirm_interval: df_5m_seed})

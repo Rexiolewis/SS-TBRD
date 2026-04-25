@@ -50,6 +50,18 @@ For first run, keep:
 ```env
 TRADING_MODE=paper
 ENABLE_LIVE_TRADING=false
+BINANCE_TESTNET=false
+MARKET_DATA_TESTNET=false
+```
+
+`MARKET_DATA_TESTNET=false` makes the dashboard and bot read real Binance Spot prices, so BTCUSDT should be much closer to the price shown in the Binance app. This does not enable real trading.
+
+To show your real USDT balance in the dashboard, create a Binance Spot API key with read permission, then set:
+
+```env
+BINANCE_API_KEY=your_real_key
+BINANCE_API_SECRET=your_real_secret
+BINANCE_TESTNET=false
 ```
 
 ## Run bot
@@ -96,6 +108,7 @@ ENABLE_LIVE_TRADING = "false"
 BINANCE_API_KEY = ""
 BINANCE_API_SECRET = ""
 BINANCE_TESTNET = "true"
+MARKET_DATA_TESTNET = "false"
 SYMBOL = "BTCUSDT"
 INTERVAL = "1m"
 CONFIRM_INTERVAL = "5m"
