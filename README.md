@@ -135,6 +135,8 @@ Use Binance Futures testnet API keys first. Do not use live keys until paper res
 - `fundamental/fundamental_filters.py` - free API filters
 - `storage/trade_logger.py` - CSV logs
 - `dashboard.py` - simple Streamlit dashboard
+- `requirements.txt` - Python dependencies for Streamlit Cloud
+- `runtime.txt` - Python version for Streamlit Cloud
 
 ## Suggested first settings
 
