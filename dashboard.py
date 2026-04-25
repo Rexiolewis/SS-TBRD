@@ -1,9 +1,11 @@
 from pathlib import Path
+import time
 
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
+import streamlit.components.v1 as components
 
 from bot_control import BOT_LOG_FILE, force_stop_bot, get_bot_pid, is_bot_running, request_stop_bot, start_bot
 from config import settings
@@ -94,7 +96,7 @@ st.markdown("""
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 @st.cache_data(ttl=20)
-def load_market(symbol, interval, confirm_interval, candle_limit, testnet):
+def load_market(symbol, interval, confirm_interval, candle_limit, testnet, refresh_bucket=0):
     client = BinanceSpotClient(testnet=testnet)
     df_1m = client.get_klines(symbol, interval, candle_limit)
     df_5m = client.get_klines(symbol, confirm_interval, candle_limit)
@@ -116,6 +118,21 @@ def load_account_balance(asset: str = "USDT") -> dict:
         testnet=settings.binance_testnet,
     )
     return client.get_asset_balance(asset)
+
+
+def schedule_auto_refresh(enabled: bool, seconds: int):
+    if not enabled:
+        return
+    components.html(
+        f"""
+        <script>
+        setTimeout(function() {{
+            window.parent.location.reload();
+        }}, {int(seconds) * 1000});
+        </script>
+        """,
+        height=0,
+    )
 
 
 def score_pct_color(pct: float) -> str:
@@ -347,6 +364,21 @@ with st.sidebar:
 
     st.divider()
 
+    # Refresh
+    st.markdown("<div class='section-title'>Refresh</div>", unsafe_allow_html=True)
+    auto_refresh = st.checkbox("Auto refresh", value=False)
+    auto_refresh_seconds = st.number_input(
+        "Every seconds",
+        min_value=5,
+        max_value=300,
+        value=20,
+        step=5,
+        disabled=not auto_refresh,
+    )
+    st.caption("Reloads the dashboard and fetches fresh market data.")
+
+    st.divider()
+
     # Trade plan
     st.markdown("<div class='section-title'>Trade Plan</div>", unsafe_allow_html=True)
     target_profit = st.number_input("Target net profit $", 0.10, value=settings.target_profit_usd, step=0.10)
@@ -368,11 +400,15 @@ with st.sidebar:
 if not symbol:
     st.stop()
 
+auto_refresh_seconds = int(auto_refresh_seconds)
+schedule_auto_refresh(auto_refresh, auto_refresh_seconds)
+refresh_bucket = int(time.time() // auto_refresh_seconds) if auto_refresh else 0
+
 # ── Load data ─────────────────────────────────────────────────────────────────
 
 try:
     df_1m, df_5m, order_book = load_market(
-        symbol, interval, confirm_interval, candle_limit, settings.market_data_testnet
+        symbol, interval, confirm_interval, candle_limit, settings.market_data_testnet, refresh_bucket
     )
 except Exception as exc:
     st.error(f"Failed to load market data: {exc}")
