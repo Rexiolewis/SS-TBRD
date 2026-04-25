@@ -38,9 +38,25 @@ class BinanceSpotClient:
 
     # ── HTTP ──────────────────────────────────────────────────────────────────
 
+    def _raise_for_status(self, resp: requests.Response, path: str):
+        if resp.status_code < 400:
+            return
+        if resp.status_code == 451:
+            raise RuntimeError(
+                "Binance returned HTTP 451 for this request. Binance is blocking "
+                "the Streamlit Cloud server location, so this endpoint cannot be "
+                "used from the hosted app. Run locally, use an allowed VPS/static "
+                "IP, or switch market data to a provider that is available from "
+                "Streamlit Cloud."
+            )
+        raise RuntimeError(
+            f"Binance request failed with HTTP {resp.status_code} on {path}: "
+            f"{resp.text[:300]}"
+        )
+
     def public_get(self, path: str, params: dict | None = None) -> dict | list:
         resp = requests.get(self.base_url + path, params=params or {}, timeout=15)
-        resp.raise_for_status()
+        self._raise_for_status(resp, path)
         return resp.json()
 
     def private_request(self, method: str, path: str, params: dict | None = None):
@@ -56,7 +72,7 @@ class BinanceSpotClient:
             headers=self._headers(),
             timeout=15,
         )
-        resp.raise_for_status()
+        self._raise_for_status(resp, path)
         return resp.json()
 
     # ── Market data (public) ──────────────────────────────────────────────────
